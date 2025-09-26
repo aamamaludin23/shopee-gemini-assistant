@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "public", <--- LOKASI FOLDER FRONTEND
+    "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",
