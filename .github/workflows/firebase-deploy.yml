@@ -16,22 +16,20 @@ jobs:
       - name: Checkout Kode
         uses: actions/checkout@v4
       
-      - name: Setup Node.js 20 # PASTIKAN INI BERLAKU
+      - name: Setup Node.js 20 
         uses: actions/setup-node@v4
         with:
           node-version: '20' 
 
       # Langkah 1: Instalasi Dependencies Functions (Backend)
-      - name: Install Dependencies Functions
+      - name: Install Functions Dependencies (npm ci)
         run: |
           cd functions
-          npm ci # Menginstal dependencies untuk backend (functions)
+          # Menginstal dependencies yang dibutuhkan oleh kode functions (index.js)
+          npm ci 
       
-      # LANGKAH BARU: Build Kode Functions (khusus jika menggunakan TypeScript/bundler)
-      - name: Build Firebase Functions
-        run: |
-          cd functions
-          npm run build || true # Jalankan build, abaikan jika script tidak ada
+      # CATATAN: Langkah "Build Firebase Functions" (npm run build) dihapus 
+      # karena tidak ada skrip "build" di functions/package.json Anda.
       
       # Langkah 2: Deployment ke Firebase menggunakan Service Account Key JSON
       - name: Deploy ke Firebase Hosting and Functions
