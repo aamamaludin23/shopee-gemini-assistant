@@ -35,7 +35,7 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' # Token CI dari GitHub Secrets
           channelId: live
-          projectId: YOUR_FIREBASE_PROJECT_ID # GANTI ID PROYEK ANDA DI SINI
+          projectId: assisten-shopee
         env:
           # Variabel rahasia yang di-pass ke Firebase Functions
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
