@@ -22,20 +22,28 @@ jobs:
           node-version: '18' 
 
       # Langkah 1: Instalasi Dependencies Functions (Backend)
-      # Ini adalah langkah yang paling sering gagal, kita pastikan ia berjalan di folder yang benar.
       - name: Install Dependencies Functions
         run: |
           cd functions
           npm ci # Menginstal dependencies untuk backend (functions)
       
-      # Langkah 2: Deployment ke Firebase
+      # LANGKAH BARU: Build Kode Functions (khusus jika menggunakan TypeScript/bundler)
+      - name: Build Firebase Functions
+        run: |
+          cd functions
+          npm run build || true # Jalankan build, abaikan jika script tidak ada
+      
+      # Langkah 2: Deployment ke Firebase menggunakan Service Account Key JSON
       - name: Deploy ke Firebase Hosting and Functions
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' # Token CI dari GitHub Secrets
+          # Menggunakan Service Account Key JSON yang tersimpan di Secret
+          # Pastikan SECRET FIREBASE_SERVICE_ACCOUNT berisi seluruh konten JSON
+          gcpCredentials: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' 
           channelId: live
-          projectId: assisten-shopee
+          # GANTI 'YOUR_FIREBASE_PROJECT_ID' DENGAN ID PROYEK ASLI YANG ANDA TEMUKAN DI FIREBASE CONSOLE!
+          projectId: assisten-shopee 
         env:
           # Variabel rahasia yang di-pass ke Firebase Functions
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
