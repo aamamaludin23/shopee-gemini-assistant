@@ -2,7 +2,7 @@ name: Deploy Shopee AI Assistant ke Firebase
 
 on:
   push:
-    # Workflow berjalan setiap kali kode di-push ke branch 'main'
+    # workflow berjalan setiap kali kode di-push ke branch 'main'
     branches:
       - main
   # Mengizinkan menjalankan workflow ini secara manual
@@ -11,40 +11,34 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout Kode
         uses: actions/checkout@v4
-      
-      - name: Setup Node.js 20 
+
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20' 
+          node-version: '20'
 
       # Langkah 1: Instalasi Dependencies Functions (Backend)
       - name: Install Functions Dependencies (npm ci)
         run: |
           cd functions
-          # Menginstal dependencies yang dibutuhkan oleh kode functions (index.js)
-          npm ci 
+          npm ci
+        # Menginstal dependencies yang dibutuhkan oleh kode functions (index.js)
+      
+      # LANGKAH BUILD TELAH DIHAPUS KARENA TIDAK DIGUNAKAN DI JS MURNI.
 
+      # Langkah 2: Deployment ke Firebase menggunakan Service Account Key JSON
       - name: Deploy ke Firebase Hosting and Functions
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-
-          # NAMA PROPERTI DIGANTI DARI gcpCredentials MENJADI firebaseServiceAccount
-          # Pastikan SECRET FIREBASE_SERVICE_ACCOUNT berisi seluruh konten JSON
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' 
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' # Pastikan service account sudah diatur di secrets
           channelId: live
-          # GANTI 'YOUR_FIREBASE_PROJECT_ID' DENGAN ID PROYEK ASLI YANG ANDA TEMUKAN DI FIREBASE CONSOLE!
-
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' 
-          channelId: live
-          # PASTIKAN INI DIGANTI DENGAN ID PROYEK ASLI ANDA!
-
-          projectId: assisten-shopee 
+          projectId: assisten-shopee # HARUS DIGANTI DENGAN ID PROYEK ASLI ANDA!
         env:
           # Variabel rahasia yang di-pass ke Firebase Functions
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
-          SHOPEE_PARTNER_KEY: ${{ secrets.SHOPEE_PARTNER_KEY }} 
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SHOPEE_PARTNER_KEY: ${{ secrets.SHOPEE_PARTNER_KEY }}
