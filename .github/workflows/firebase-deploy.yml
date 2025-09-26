@@ -28,19 +28,18 @@ jobs:
           # Menginstal dependencies yang dibutuhkan oleh kode functions (index.js)
           npm ci 
       
-      # CATATAN: Langkah "Build Firebase Functions" (npm run build) dihapus 
-      # karena tidak ada skrip "build" di functions/package.json Anda.
-      
+      # HAPUS BARIS DI BAWAH INI (DARI - name: Build... SAMPAI run: | ... )
+      # =====================================================================
+      # =====================================================================
+
       # Langkah 2: Deployment ke Firebase menggunakan Service Account Key JSON
       - name: Deploy ke Firebase Hosting and Functions
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          # NAMA PROPERTI DIGANTI DARI gcpCredentials MENJADI firebaseServiceAccount
-          # Pastikan SECRET FIREBASE_SERVICE_ACCOUNT berisi seluruh konten JSON
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' 
           channelId: live
-          # GANTI 'YOUR_FIREBASE_PROJECT_ID' DENGAN ID PROYEK ASLI YANG ANDA TEMUKAN DI FIREBASE CONSOLE!
+          # PASTIKAN INI DIGANTI DENGAN ID PROYEK ASLI ANDA!
           projectId: assisten-shopee 
         env:
           # Variabel rahasia yang di-pass ke Firebase Functions
