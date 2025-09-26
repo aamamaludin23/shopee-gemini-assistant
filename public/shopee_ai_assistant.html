@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asisten AI Chat Shopee (Mockup)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .chat-bubble-ai { background-color: #e5ffcc; border-radius: 12px 12px 12px 4px; }
+        .chat-bubble-buyer { background-color: #ffffff; border-radius: 12px 12px 4px 12px; border: 1px solid #e0e0e0; }
+        .shopee-color { background-color: #ff5722; }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js"; // IMPORT BARU
+
+        // setLogLevel('Debug'); // Aktifkan ini untuk debugging Firebase
+
+        // --- GLOBAL VARIABLES (MANDATORY FROM CANVAS) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'shopee-assistant-default';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "mock-key" };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, functionsInstance, userId = 'loading'; // Tambahkan functionsInstance
+        let isAuthReady = false;
+
+        // --- SHOPEE API MOCKUP DATA (Ini adalah data yang harus di-input penjual) ---
+        // Peringatan: Data rahasia ini HANYA boleh disimpan di server (Firebase Functions/Backend)
+        const shopeeCredentials = {
+            // Kunci ini didapat setelah pendaftaran di Shopee Open Platform
+            partnerId: '123456', // ID Partner Anda (Statik)
+            partnerKey: 'abcdefg1234567890', // Kunci Rahasia Partner Anda (Statik)
+            shopId: '7890123', // ID Toko yang Diotorisasi
+        };
+
+        // Token Dinamis yang Harus Diperbarui
+        let currentTokens = {
+            // Perbarui ini di Database (Firestore atau Realtime DB) di sisi server
+            accessToken: localStorage.getItem('shopee_access_token') || 'token_expired_or_not_set', 
+            refreshToken: localStorage.getItem('shopee_refresh_token') || 'refresh_token_not_set',
+            accessExpiresAt: parseInt(localStorage.getItem('shopee_access_expires') || '0'), 
+        };
+
+        // --- FIRESTORE SETUP & AUTHENTICATION ---
+
+        async function initializeAppAndAuth() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                functionsInstance = getFunctions(app); // Inisialisasi Firebase Functions
+
+                // Otentikasi pengguna
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Setelah auth, ambil UID
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        document.getElementById('user-id-display').textContent = `User ID: ${userId}`;
+                        setupShopeeSimulation();
+                        setupChatListener();
+                    } else {
+                        console.error("Authentication failed. Cannot get User ID.");
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error initializing Firebase or signing in:", error);
+            }
+        }
+
+        // --- MOCKUP FUNGSI UTAMA (SIMULASI LOGIKA BACK-END) ---
+
+        /**
+         * /* SERVER SIDE LOGIC SIMULATION * /
+         * Fungsi ini harus dijalankan di server (misalnya Firebase Functions)
+         * karena melibatkan kunci rahasia (Partner Key) dan API Key Gemini.
+         * Tujuannya adalah untuk menghasilkan tanda tangan yang aman untuk panggilan API Shopee.
+         */
+        function generateShopeeSignature(path, timestamp, token = '') {
+            const baseString = `${shopeeCredentials.partnerId}${path}${timestamp}${token}${shopeeCredentials.shopId}`;
+            // Dalam implementasi nyata, gunakan HMAC-SHA256(baseString, shopeeCredentials.partnerKey)
+            // Di sini kita hanya mengembalikan string mock untuk UI.
+            return `MOCK_SIGNATURE_${btoa(baseString).substring(0, 10)}`; 
+        }
+
+        /**
+         * /* SERVER SIDE LOGIC SIMULATION * /
+         * Memeriksa dan memperbarui Access Token Shopee jika sudah atau akan kedaluwarsa.
+         * Fungsi ini harus dijalankan otomatis oleh scheduler di server setiap 30 hari (atau lebih sering).
+         */
+        async function refreshAccessTokenIfExpired() {
+            const now = Date.now();
+            const fourHoursInMs = 4 * 60 * 60 * 1000;
+            const threshold = fourHoursInMs - (30 * 60 * 1000); // Perbarui 30 menit sebelum kedaluwarsa
+
+            // Periksa: Apakah token saat ini sudah kedaluwarsa atau mendekati kedaluwarsa?
+            if (currentTokens.accessExpiresAt < now || currentTokens.accessExpiresAt - now < threshold) {
+                console.warn("Access Token Shopee mendekati atau sudah kedaluwarsa. Mencoba refresh otomatis...");
+                updateShopeeStatus('Memperbarui token...', 'bg-yellow-500');
+
+                // --- Simulasi Panggilan API Refresh di Server ---
+                try {
+                    // Di server, Anda akan menggunakan fetch ke endpoint Shopee dengan sign yang benar
+                    // Kita asumsikan ini berhasil dan mendapatkan token baru
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulasi latensi
+
+                    const newAccessToken = `token_${Date.now()}`;
+                    const newRefreshToken = `refresh_${Date.now()}`;
+                    const newExpiresAt = Date.now() + fourHoursInMs;
+
+                    currentTokens.accessToken = newAccessToken;
+                    currentTokens.refreshToken = newRefreshToken;
+                    currentTokens.accessExpiresAt = newExpiresAt;
+
+                    // Update simulasi penyimpanan (di server nyata, ini akan di Firestore)
+                    localStorage.setItem('shopee_access_token', newAccessToken);
+                    localStorage.setItem('shopee_refresh_token', newRefreshToken);
+                    localStorage.setItem('shopee_access_expires', newExpiresAt.toString());
+
+                    updateShopeeStatus('Token Diperbarui Otomatis!', 'bg-green-500');
+                    document.getElementById('access-token-display').textContent = newAccessToken.substring(0, 15) + '...';
+                    document.getElementById('refresh-token-display').textContent = newRefreshToken.substring(0, 15) + '...';
+
+                    console.log("Token Shopee berhasil diperbarui otomatis.");
+                    return true;
+                } catch (error) {
+                    updateShopeeStatus('Gagal Perbarui Token!', 'bg-red-500');
+                    console.error("Gagal mendapatkan Access Token baru:", error);
+                    return false;
+                }
+            }
+            updateShopeeStatus('Token Aktif', 'bg-green-500');
+            return true;
+        }
+
+        /**
+         * Memanggil Firebase Function (getAiReply) untuk mendapatkan balasan Gemini.
+         */
+        async function getGeminiReplyFromFunction(chatHistory, buyerMessage) {
+            if (!functionsInstance) {
+                return "Error: Fungsi Firebase tidak terinisialisasi.";
+            }
+            
+            // Panggil Firebase Function yang aman di server
+            const getReplyCallable = httpsCallable(functionsInstance, 'getAiReply');
+
+            try {
+                // Data yang dikirim ke fungsi backend
+                const result = await getReplyCallable({ chatHistory, buyerMessage });
+                
+                // Balasan dari Firebase Function
+                return result.data.text; 
+
+            } catch (error) {
+                console.error("Error calling Firebase Function:", error);
+                // Menangani error dari server (seperti unauthenticated atau internal error)
+                return `Maaf, terjadi kesalahan di sistem backend (Error: ${error.message}).`;
+            }
+        }
+
+
+        // --- FIREBASE / CHAT IMPLEMENTATION ---
+
+        function getChatCollectionRef() {
+            return collection(db, `artifacts/${appId}/public/data/shopee-chats`);
+        }
+
+        async function sendMessage(text) {
+            if (!isAuthReady || !text.trim()) return;
+
+            const chatRef = getChatCollectionRef();
+            const buyerUserId = userId; // Dalam konteks ini, kita berperan sebagai pembeli untuk menguji AI
+
+            try {
+                // 1. Simpan pesan Pembeli
+                await addDoc(chatRef, {
+                    userId: buyerUserId,
+                    role: 'Pembeli',
+                    text: text,
+                    timestamp: serverTimestamp(),
+                });
+
+                // 2. Tampilkan status 'AI Mengetik...'
+                const typingDoc = await addDoc(chatRef, {
+                    userId: 'Gemini',
+                    role: 'Gemini',
+                    text: 'AI Mengetik...',
+                    timestamp: serverTimestamp(),
+                    isTyping: true,
+                });
+
+                // 3. Ambil riwayat chat (kecuali pesan 'AI Mengetik')
+                const messages = Array.from(document.getElementById('chat-window').children)
+                    .filter(el => el.dataset.role)
+                    .map(el => ({ role: el.dataset.role, text: el.textContent.trim().replace('AI Mengetik...', '').trim() }));
+
+                const buyerMessage = text;
+
+                // 4. Panggil fungsi refresh token Shopee (Simulasi BACK-END)
+                // Kita tidak perlu menunggu hasil isTokenValid di frontend, karena logika token
+                // sudah ditangani sepenuhnya oleh Firebase Function di backend.
+                // refreshAccessTokenIfExpired(); // Cukup dipanggil oleh scheduler di dunia nyata
+
+                // 5. Dapatkan balasan dari Gemini melalui Firebase Function
+                let geminiReply = await getGeminiReplyFromFunction(messages, buyerMessage);
+                
+                // 6. Hapus status 'AI Mengetik' dan simpan balasan Gemini
+                await updateDoc(doc(db, chatRef.id, typingDoc.id), {
+                    text: geminiReply,
+                    isTyping: false,
+                    timestamp: serverTimestamp(),
+                });
+
+                document.getElementById('chat-input').value = '';
+                document.getElementById('chat-input').focus();
+
+            } catch (e) {
+                console.error("Error adding document or getting reply: ", e);
+            }
+        }
+
+        function setupChatListener() {
+            if (!isAuthReady) return;
+
+            const chatWindow = document.getElementById('chat-window');
+            const chatRef = getChatCollectionRef();
+            const q = query(chatRef);
+
+            onSnapshot(q, (snapshot) => {
+                let currentScroll = chatWindow.scrollHeight - chatWindow.clientHeight;
+                let shouldScroll = chatWindow.scrollTop === currentScroll || chatWindow.children.length === 0;
+
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    const docId = change.doc.id;
+                    let messageEl = document.getElementById(`msg-${docId}`);
+
+                    if (change.type === "added" || change.type === "modified") {
+                        if (!messageEl) {
+                            messageEl = document.createElement('div');
+                            messageEl.id = `msg-${docId}`;
+                            messageEl.classList.add('flex', 'mb-4', 'p-1');
+                            chatWindow.appendChild(messageEl);
+                        }
+
+                        // Tentukan tata letak berdasarkan peran
+                        const isGemini = data.role === 'Gemini';
+                        messageEl.classList.toggle('justify-end', !isGemini);
+                        messageEl.classList.toggle('justify-start', isGemini);
+                        messageEl.dataset.role = data.role; // Simpan peran untuk riwayat Gemini
+
+                        let content = '';
+                        if (data.isTyping) {
+                            content = `<span class="italic text-gray-500">AI Mengetik...</span>`;
+                        } else {
+                            content = data.text;
+                        }
+
+                        messageEl.innerHTML = `
+                            <div class="${isGemini ? 'chat-bubble-ai' : 'chat-bubble-buyer'} max-w-[80%] p-3 shadow-md">
+                                <p class="text-xs font-semibold ${isGemini ? 'text-green-800' : 'text-gray-900'} mb-1">${isGemini ? 'Gemini Asisten' : 'Pembeli'}</p>
+                                <p class="text-sm">${content}</p>
+                            </div>
+                        `;
+                    }
+
+                    if (change.type === "removed" && messageEl) {
+                        messageEl.remove();
+                    }
+                });
+
+                if (shouldScroll) {
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                }
+            });
+        }
+
+        function setupShopeeSimulation() {
+            // Tampilkan status koneksi awal
+            document.getElementById('shopee-status').textContent = 'Mengecek Koneksi Shopee...';
+            // Token refresh manual hanya untuk simulasi UI. Logika 24 jam ada di Firebase Functions
+            refreshAccessTokenIfExpired(); 
+
+            // Tampilkan token simulasi
+            document.getElementById('access-token-display').textContent = currentTokens.accessToken.substring(0, 15) + '...';
+            document.getElementById('refresh-token-display').textContent = currentTokens.refreshToken.substring(0, 15) + '...';
+            document.getElementById('shop-id-display').textContent = shopeeCredentials.shopId;
+            document.getElementById('partner-id-display').textContent = shopeeCredentials.partnerId;
+
+            // Atur tombol refresh token manual
+            document.getElementById('manual-refresh-btn').onclick = refreshAccessTokenIfExpired;
+
+            // Tambahkan event listener untuk input chat
+            document.getElementById('send-btn').addEventListener('click', () => {
+                const input = document.getElementById('chat-input').value;
+                sendMessage(input);
+            });
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const input = document.getElementById('chat-input').value;
+                    sendMessage(input);
+                }
+            });
+        }
+
+
+        window.onload = initializeAppAndAuth;
+
+        function updateShopeeStatus(message, colorClass) {
+            const statusEl = document.getElementById('shopee-status');
+            statusEl.textContent = message;
+            statusEl.className = `p-1 text-center text-xs font-medium rounded-b-lg text-white ${colorClass}`;
+        }
+    </script>
+</head>
+<body class="min-h-screen">
+
+    <div class="max-w-xl mx-auto bg-white shadow-xl rounded-xl mt-4">
+
+        <!-- HEADER APLIKASI -->
+        <div class="p-4 shopee-color rounded-t-xl text-white">
+            <h1 class="text-2xl font-bold">Shopee AI Assistant 24/7</h1>
+            <p class="text-sm mt-1" id="user-id-display">User ID: Loading...</p>
+        </div>
+
+        <!-- STATUS KONEKSI SHOPEE -->
+        <div id="shopee-status" class="p-1 text-center text-xs font-medium rounded-b-lg bg-gray-500 text-white">
+            Memuat Status Koneksi...
+        </div>
+
+        <!-- DEBUG/STATUS TOKEN (Simulasi Server State) -->
+        <div class="p-4 border-b border-gray-100 bg-gray-50">
+            <p class="text-xs font-bold text-gray-700 mb-2">STATUS INTEGRASI SHOPEE API (Simulasi Back-end)</p>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div><span class="font-semibold text-gray-600">Shop ID:</span> <span id="shop-id-display">...</span></div>
+                <div><span class="font-semibold text-gray-600">Partner ID:</span> <span id="partner-id-display">...</span></div>
+                <div><span class="font-semibold text-gray-600">Access Token:</span> <span id="access-token-display" class="break-all">...</span></div>
+                <div><span class="font-semibold text-gray-600">Refresh Token:</span> <span id="refresh-token-display" class="break-all">...</span></div>
+            </div>
+            <button id="manual-refresh-btn" class="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-1 rounded-lg text-sm transition duration-150">
+                Refresh Access Token (Manual Trigger)
+            </button>
+            <p class="text-xs text-gray-500 mt-2">
+                *Token harus diperbarui otomatis setiap 4 jam. Tekan tombol di atas untuk uji coba fungsi *Token Refresh* 24/7.
+            </p>
+        </div>
+
+        <!-- CHAT WINDOW -->
+        <div id="chat-window" class="h-96 overflow-y-auto p-4 space-y-4 bg-gray-100">
+            <!-- Pesan Chat akan muncul di sini dari Firestore -->
+            <div class="flex justify-start mb-4 p-1">
+                <div class="chat-bubble-ai max-w-[80%] p-3 shadow-md">
+                    <p class="text-xs font-semibold text-green-800 mb-1">Gemini Asisten</p>
+                    <p class="text-sm">Selamat datang! Saya Asisten AI Toko Anda. Silakan kirim pertanyaan seperti yang dilakukan pembeli (contoh: "Apakah stok produk A masih ada?")</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHAT INPUT -->
+        <div class="p-4 border-t border-gray-200 flex items-center">
+            <input type="text" id="chat-input" placeholder="Tulis pesan pembeli di sini..."
+                   class="flex-grow p-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-shopee-color focus:border-transparent transition duration-150">
+            <button id="send-btn" class="ml-3 shopee-color text-white p-3 rounded-full shadow-lg hover:bg-[#e64a19] transition duration-150 transform hover:scale-105">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><path d="m22 2-7 7m0 0-7 7m7-7-2-2-7 7M22 2 11 13M15 15l-3 3-5-5-3-3 8-8"/></svg>
+            </button>
+        </div>
+
+    </div>
+
+</body>
+</html>
