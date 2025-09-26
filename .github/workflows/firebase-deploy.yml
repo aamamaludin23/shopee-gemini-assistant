@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Kode
         uses: actions/checkout@v4
       
-      - name: Setup Node.js 20 # DIUBAH DARI '18' MENJADI '20' UNTUK MENGHINDARI ISU FIREBASE CLI
+      - name: Setup Node.js 20 # PASTIKAN INI BERLAKU
         uses: actions/setup-node@v4
         with:
           node-version: '20' 
@@ -43,7 +43,7 @@ jobs:
           gcpCredentials: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' 
           channelId: live
           # GANTI 'YOUR_FIREBASE_PROJECT_ID' DENGAN ID PROYEK ASLI YANG ANDA TEMUKAN DI FIREBASE CONSOLE!
-          projectId: YOUR_FIREBASE_PROJECT_ID 
+          projectId: assisten-shopee 
         env:
           # Variabel rahasia yang di-pass ke Firebase Functions
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
