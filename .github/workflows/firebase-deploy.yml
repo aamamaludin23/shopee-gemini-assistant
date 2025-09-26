@@ -38,9 +38,9 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          # Menggunakan Service Account Key JSON yang tersimpan di Secret
+          # NAMA PROPERTI DIGANTI DARI gcpCredentials MENJADI firebaseServiceAccount
           # Pastikan SECRET FIREBASE_SERVICE_ACCOUNT berisi seluruh konten JSON
-          gcpCredentials: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' 
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' 
           channelId: live
           # GANTI 'YOUR_FIREBASE_PROJECT_ID' DENGAN ID PROYEK ASLI YANG ANDA TEMUKAN DI FIREBASE CONSOLE!
           projectId: assisten-shopee 
