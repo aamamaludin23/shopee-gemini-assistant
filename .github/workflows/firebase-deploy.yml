@@ -27,13 +27,6 @@ jobs:
           cd functions
           # Menginstal dependencies yang dibutuhkan oleh kode functions (index.js)
           npm ci 
-      
-      # CATATAN: Langkah "Build Firebase Functions" (npm run build) dihapus 
-      # karena tidak ada skrip "build" di functions/package.json Anda.
-      
-      # HAPUS BARIS DI BAWAH INI (DARI - name: Build... SAMPAI run: | ... )
-      # =====================================================================
-      # =====================================================================
 
 
       # Langkah 2: Deployment ke Firebase menggunakan Service Account Key JSON
