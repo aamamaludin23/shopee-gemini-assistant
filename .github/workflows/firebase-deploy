@@ -1,0 +1,42 @@
+name: Deploy Shopee AI Assistant ke Firebase
+
+on:
+  push:
+    # Workflow berjalan setiap kali kode di-push ke branch 'main'
+    branches:
+      - main
+  # Mengizinkan menjalankan workflow ini secara manual
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Kode
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' 
+
+      # Langkah 1: Instalasi Dependencies Functions (Backend)
+      # Ini adalah langkah yang paling sering gagal, kita pastikan ia berjalan di folder yang benar.
+      - name: Install Dependencies Functions
+        run: |
+          cd functions
+          npm ci # Menginstal dependencies untuk backend (functions)
+      
+      # Langkah 2: Deployment ke Firebase
+      - name: Deploy ke Firebase Hosting and Functions
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' # Token CI dari GitHub Secrets
+          channelId: live
+          projectId: YOUR_FIREBASE_PROJECT_ID # GANTI ID PROYEK ANDA DI SINI
+        env:
+          # Variabel rahasia yang di-pass ke Firebase Functions
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
+          SHOPEE_PARTNER_KEY: ${{ secrets.SHOPEE_PARTNER_KEY }} 
