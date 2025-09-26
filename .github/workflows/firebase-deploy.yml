@@ -28,8 +28,6 @@ jobs:
           # Menginstal dependencies yang dibutuhkan oleh kode functions (index.js)
           npm ci 
 
-
-      # Langkah 2: Deployment ke Firebase menggunakan Service Account Key JSON
       - name: Deploy ke Firebase Hosting and Functions
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
